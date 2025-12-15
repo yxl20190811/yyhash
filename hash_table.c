@@ -9,12 +9,12 @@ THashTable* createHashTable() {
     }
     
     // Initialize page directory, supports up to 2^12 = 4096 pages (using high 12 bits as page index)
-    table->PageDir = (THashNode***)malloc(0xFFFFF*sizeof(void*));
+    table->PageDir = (THashNode***)malloc((0xFFFFF+1)*sizeof(void*));
     if (!table->PageDir) {
         free(table);
         return NULL;
     }
-    memset(table->PageDir, 0, 0xFFFFF * sizeof(void*));
+    memset(table->PageDir, 0, (0xFFFFF+1) * sizeof(void*));
     return table;
 }
 
@@ -24,12 +24,12 @@ void destroyHashTable(THashTable* table) {
     
     if (table->PageDir) {
         // Traverse all pages and free memory
-        for (int i = 0; i < 0xFFFFF; i++) {
-            if (table->PageDir[i]) {
+        for (int i = 0; i < (0xFFFFF+1); i++) {  // 0 到 0xFFFFF 包含 = (0xFFFFF+1) 个页面
+            if (NULL != table->PageDir[i]) {
                 THashNode** page = table->PageDir[i];
                 
                 // Traverse each slot in the page
-                for (int j = 0; j < 0xFFF; j++) {  // 2^12=4096 slots per page
+                for (int j = 0; j < (0xFFF+1); j++) {  // 0 到 0xFFF slots per pag
                     THashNode* cur = page[j];
                     while (cur) {
                         THashNode* temp = cur;
@@ -80,11 +80,11 @@ THashNode* insertHashTable(THashTable* table, const char* name) {
     
     // If page is empty, create a new page
     if (NULL == *pagePtr) {
-        *pagePtr = (THashNode**)malloc(0xFFF * sizeof(THashNode*));  // 2^12=4096 slots per page
+        *pagePtr = (THashNode**)malloc((0xFFF+1) * sizeof(THashNode*));  // 每页 2^12=4096 个槽位
         if (!*pagePtr) {
             return NULL;
         }
-        memset(*pagePtr, 0, 0xFFF * sizeof(THashNode*));
+        memset(*pagePtr, 0, (0xFFF+1) * sizeof(THashNode*));
     }
     
     // Get node slot pointer
@@ -101,17 +101,12 @@ THashNode* insertHashTable(THashTable* table, const char* name) {
     }
     
     // Create new node
-    THashNode* newNode = (THashNode*)malloc(sizeof(THashNode));
+    THashNode* newNode = (THashNode*)malloc(sizeof(THashNode)+ strlen(name) + 1);
     if (!newNode) {
         return NULL;
     }
-    
-    newNode->m_name = (char*)malloc(strlen(name) + 1);
-    if (!newNode->m_name) {
-        free(newNode);
-        return NULL;
-    }
-    
+
+    newNode->m_name = (char*)newNode + sizeof(THashNode);
     strcpy(newNode->m_name, name);
     newNode->m_HashNodeNext = *node;
     *node = newNode;
