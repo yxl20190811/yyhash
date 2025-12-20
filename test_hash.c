@@ -41,7 +41,12 @@ int main() {
     end_time = clock();
     elapsed_time = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
     printf("find used time: %.2f second\n", elapsed_time);
+
+    start_time = clock();
     destroyHashTable(table);
+    end_time = clock();
+    elapsed_time = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
+    printf("destroy hashtabl used time: %.2f second\n", elapsed_time);
 
     return 0;
 }
