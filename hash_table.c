@@ -1,6 +1,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "hash_table.h"
 
+const unsigned DirMask = 0xFFFFFFF;
+const unsigned DirMov = 4;
+const unsigned PageMask = 0xF;
 // Create hash table
 THashTable* createHashTable() {
     THashTable* table = (THashTable*)malloc(sizeof(THashTable));
@@ -9,12 +12,12 @@ THashTable* createHashTable() {
     }
     
     // Initialize page directory, supports up to 2^12 = 4096 pages (using high 12 bits as page index)
-    table->PageDir = (THashNode***)malloc((0xFFFFF+1)*sizeof(void*));
+    table->PageDir = (THashNode***)malloc((DirMask +1)*sizeof(void*));
     if (!table->PageDir) {
         free(table);
         return NULL;
     }
-    memset(table->PageDir, 0, (0xFFFFF+1) * sizeof(void*));
+    memset(table->PageDir, 0, (DirMask + 1) * sizeof(void*));
     return table;
 }
 
@@ -24,25 +27,13 @@ void destroyHashTable(THashTable* table) {
     
     if (table->PageDir) {
         // Traverse all pages and free memory
-        for (int i = 0; i < (0xFFFFF+1); i++) {  // 0 到 0xFFFFF 包含 = (0xFFFFF+1) 个页面
-            if (NULL != table->PageDir[i]) {
+        for (int i = 0; i < DirMask; i++) {
+            if (table->PageDir[i]) {
                 THashNode** page = table->PageDir[i];
-                
-                // Traverse each slot in the page
-                for (int j = 0; j < (0xFFF+1); j++) {  // 0 到 0xFFF slots per pag
-                    THashNode* cur = page[j];
-                    while (cur) {
-                        THashNode* temp = cur;
-                        cur = cur->m_HashNodeNext;
-                        free(temp);
-                    }
-                }
-                
                 // Free the page itself
                 free(table->PageDir[i]);
             }
         }
-        
         free(table->PageDir);
     }
     
@@ -62,29 +53,29 @@ unsigned int hashString(const char* str) {
 }
 
 // Insert or update hash table item
-THashNode* insertHashTable(THashTable* table, const char* name) {
-    if (!table || !name) return NULL;
+THashNode* insertHashTable(THashTable* table, THashNode* newNode) {
+    if (!table || !newNode || !newNode->m_name) return NULL;
     
-    unsigned int hashID = hashString(name);
+    unsigned int hashID = hashString(newNode->m_name);
     
     // According to original document logic: pageCount = hashID >> 20; pageOffset = hashID & 0xFFF; (low 12 bits)
     // Changed to use high 20 bits as page index, low 12 bits as page offset, so each page has only 4096 slots
-    int pageCount = (hashID >> 12);  // Use high 20 bits as page index
-    unsigned int pageOffset = hashID & 0xFFF;   // Use low 12 bits as page offset
+    int pageCount = (hashID >> DirMov);  // Use high 20 bits as page index
+    
+    unsigned int pageOffset = hashID & PageMask;   // Use low 12 bits as page offset
     
     // Limit page index within valid range
-    pageCount = pageCount & 0xFFFFF;  // Ensure not exceeding 20 bits
     
     // Get page pointer
     THashNode*** pagePtr = &(table->PageDir[pageCount]);
     
     // If page is empty, create a new page
     if (NULL == *pagePtr) {
-        *pagePtr = (THashNode**)malloc((0xFFF+1) * sizeof(THashNode*));  // 每页 2^12=4096 个槽位
+        *pagePtr = (THashNode**)malloc((PageMask +1) * sizeof(THashNode*));  // 2^12=4096 slots per page
         if (!*pagePtr) {
             return NULL;
         }
-        memset(*pagePtr, 0, (0xFFF+1) * sizeof(THashNode*));
+        memset(*pagePtr, 0, (PageMask + 1) * sizeof(THashNode*));
     }
     
     // Get node slot pointer
@@ -93,7 +84,7 @@ THashNode* insertHashTable(THashTable* table, const char* name) {
     // Check if a node with the same name already exists
     THashNode* cur = *node;
     while (NULL != cur) {
-        if (0 == strcmp(cur->m_name, name)) {
+        if (0 == strcmp(cur->m_name, newNode->m_name)) {
             // Node already exists, update value and return
             return cur;
         }
@@ -101,13 +92,6 @@ THashNode* insertHashTable(THashTable* table, const char* name) {
     }
     
     // Create new node
-    THashNode* newNode = (THashNode*)malloc(sizeof(THashNode)+ strlen(name) + 1);
-    if (!newNode) {
-        return NULL;
-    }
-
-    newNode->m_name = (char*)newNode + sizeof(THashNode);
-    strcpy(newNode->m_name, name);
     newNode->m_HashNodeNext = *node;
     *node = newNode;
 
@@ -121,11 +105,8 @@ THashNode* findHashTable(THashTable* table, const char* name) {
     unsigned int hashID = hashString(name);
     
     // According to original document logic: pageCount = hashID >> 20; pageOffset = hashID & 0xFFF; (low 12 bits)
-    int pageCount = (hashID >> 12);  // Use high 20 bits as page index
-    unsigned int pageOffset = hashID & 0xFFF;   // Use low 12 bits as page offset
-    
-    // Limit page index within valid range
-    pageCount = pageCount & 0xFFFFF;  // Ensure not exceeding 20 bits
+    int pageCount = (hashID >> DirMov);  // Use high 20 bits as page index
+    unsigned int pageOffset = hashID & PageMask;   // Use low 12 bits as page offset
     
     
     // Get page pointer
@@ -157,12 +138,10 @@ int removeHashTable(THashTable* table, const char* name) {
     unsigned int hashID = hashString(name);
     
     // According to original document logic: pageCount = hashID >> 20; pageOffset = hashID & 0xFFF; (low 12 bits)
-    int pageCount = (hashID >> 12);  // Use high 20 bits as page index
-    unsigned int pageOffset = hashID & 0xFFF;   // Use low 12 bits as page offset
+    int pageCount = (hashID >> DirMov);  // Use high 20 bits as page index
+    unsigned int pageOffset = hashID & PageMask;   // Use low 12 bits as page offset
     
-    // Limit page index within valid range
-    pageCount = pageCount & 0xFFFFF;  // Ensure not exceeding 20 bits
-    
+
 
     // Get page pointer
     THashNode** page = table->PageDir[pageCount];

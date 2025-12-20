@@ -4,15 +4,13 @@
 #include "hash_table.h"
 #include <time.h>
 
-typedef struct {
-    char m_name[50];
-}TData;
+
 const int max = 100000000;
 int main() {
     printf("Open chain hash table demonstration program\n");
-    TData* data = (TData*)malloc(max*sizeof(TData));
+    THashNode* data = (THashNode*)malloc(max*sizeof(THashNode));
     for (int i = 0; i < max; ++i) {
-        snprintf(data[i].m_name, 50, "%d_%d", i, i);
+        snprintf(data[i].m_name, 20, "%d_%d", i, i);
     }
     // Create hash table
     THashTable* table = createHashTable();
@@ -24,7 +22,7 @@ int main() {
     clock_t start_time = clock();
     // Test insert operation
     for (int i = 0; i < max; ++i) {
-        insertHashTable(table, data[i].m_name);
+        insertHashTable(table, data+i);
     }
     clock_t end_time = clock();
     double elapsed_time = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
@@ -43,7 +41,6 @@ int main() {
     end_time = clock();
     elapsed_time = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
     printf("find used time: %.2f second\n", elapsed_time);
-    free(data); 
     destroyHashTable(table);
 
     return 0;

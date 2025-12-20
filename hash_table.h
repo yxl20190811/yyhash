@@ -8,9 +8,9 @@
 #include <string.h>
 
 // Define hash node structure
-typedef struct HashNode {
-    char* m_name;                      // Stored string key
-    struct HashNode* m_HashNodeNext;   // Next node pointer in linked list
+typedef struct THashNode {
+    char m_name[20];                      // Stored string key
+    struct THashNode* m_HashNodeNext;   // Next node pointer in linked list
 } THashNode;
 
 
@@ -23,7 +23,7 @@ typedef struct {
 THashTable* createHashTable();
 void destroyHashTable(THashTable* table);
 unsigned int hashString(const char* str);
-THashNode* insertHashTable(THashTable* table, const char* name);
+THashNode* insertHashTable(THashTable* table, THashNode* node);
 THashNode* findHashTable(THashTable* table, const char* name);
 int removeHashTable(THashTable* table, const char* name);
 
