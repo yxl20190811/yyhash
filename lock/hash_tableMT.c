@@ -18,22 +18,21 @@ THashTable* createHashTable() {
         return NULL;
     }
     memset(table->PageDir, 0, (DirMask + 1) * sizeof(void*));
-    pthread_mutex_init(&(table->pageCreationLock), NULL);
     return table;
 }
 
 // Destroy hash table
 void destroyHashTable(THashTable* table) {
     if (!table) return;
-    pthread_mutex_destroy(&(table->pageCreationLock));
 
     if (table->PageDir) {
         // Traverse all pages and free memory
         for (int i = 0; i < DirMask; i++) {
             if (table->PageDir[i]) {
-                THashNode** page = table->PageDir[i];
-                // Free the page itself
+
+
                 free(table->PageDir[i]);
+                table->PageDir[i] = NULL;
             }
         }
         free(table->PageDir);
@@ -53,9 +52,9 @@ unsigned int hashString(const char* str) {
     
     return hash;
 }
-
+volatile int spin_lock = 0;
 // Insert or update hash table item
-THashNode* insertHashTable(THashTable* table, THashNode* newNode) {
+THashNode* insertHashTable(THashTable* table, THashNode* newNode, void** page) {
     if (!table || !newNode || !newNode->m_name) return NULL;
     
     unsigned int hashID = hashString(newNode->m_name);
@@ -70,32 +69,30 @@ THashNode* insertHashTable(THashTable* table, THashNode* newNode) {
     
     // Get page pointer
     THashNode*** pagePtr = &(table->PageDir[pageCount]);
-    bool isLock = false;
-    // If page is empty, create a new page
-    if (NULL == *pagePtr) {
-        isLock = true;
-        pthread_mutex_lock(&(table->pageCreationLock));
-        if (NULL == *pagePtr) {
-            THashNode** tmp = (THashNode**)malloc((PageMask +1) * sizeof(THashNode*));  // 2^12=4096 slots per page
-            if (tmp) {
-                pthread_mutex_unlock(&(table->pageCreationLock));
-                return NULL;
-            }
-            memset(tmp, 0, (PageMask + 1) * sizeof(THashNode*));
-            *pagePtr = tmp;
+    if (NULL == *page) {
+        *page = (THashNode**)malloc( (PageMask + 1) * sizeof(THashNode*));  // 每页 2^12=4096 个槽位
+        if (NULL == *page) {
+            return NULL;
         }
+        memset(*page, 0,  (PageMask + 1) * sizeof(THashNode*));
+    }
+    if(0 == __sync_lock_test_and_set(pagePtr, *page)){
+        *page = NULL;
     }
     
     // Get node slot pointer
     THashNode** node = &((*pagePtr)[pageOffset]);
-    if(!isLock){
-        pthread_mutex_lock(&(table->pageCreationLock));
+    newNode->m_HashNodeNext = NULL;
+    if(0 == __sync_lock_test_and_set(node, newNode)){
+        return newNode;
     }
+    while (__sync_lock_test_and_set(&spin_lock, 1));
     // Check if a node with the same name already exists
     THashNode* cur = *node;
     while (NULL != cur) {
         if (0 == strcmp(cur->m_name, newNode->m_name)) {
             // Node already exists, update value and return
+            __sync_lock_release(&spin_lock);
             return cur;
         }
         cur = cur->m_HashNodeNext;
@@ -104,7 +101,7 @@ THashNode* insertHashTable(THashTable* table, THashNode* newNode) {
     // Create new node
     newNode->m_HashNodeNext = *node;
     *node = newNode;
-    pthread_mutex_unlock(&(table->pageCreationLock));
+    __sync_lock_release(&spin_lock);
     return newNode;
 }
 
@@ -166,7 +163,7 @@ int removeHashTable(THashTable* table, const char* name) {
     
     // Traverse linked list to find the node to delete
     THashNode* prev = NULL;
-    pthread_mutex_lock(&(table->pageCreationLock));
+    
     THashNode* cur = *node;
     while (cur) {
         if (0 == strcmp(cur->m_name, name)) {
@@ -176,12 +173,12 @@ int removeHashTable(THashTable* table, const char* name) {
             else{
                 *node = cur->m_HashNodeNext;
             }
-            pthread_mutex_unlock(&(table->pageCreationLock));
+            
             return 1; // Successfully deleted
         }
         prev = cur;
         cur = cur->m_HashNodeNext;
     }
-    pthread_mutex_unlock(&(table->pageCreationLock));
+
     return 0; // No node to delete found
 }

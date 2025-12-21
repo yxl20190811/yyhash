@@ -26,7 +26,7 @@ typedef struct {
 THashTable* createHashTable();
 void destroyHashTable(THashTable* table);
 unsigned int hashString(const char* str);
-THashNode* insertHashTable(THashTable* table, THashNode* node);
+THashNode* insertHashTable(THashTable* table, THashNode* node, void** page);
 THashNode* findHashTable(THashTable* table, const char* name);
 int removeHashTable(THashTable* table, const char* name);
 
