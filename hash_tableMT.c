@@ -87,7 +87,7 @@ THashNode* insertHashTable(THashTable* table, const char* name, THashNode** node
     while (NULL != cur) {
         if (0 == strcmp(cur->m_name, name)) {
             // Node already exists, update value and return
-            sync_lock_release(&data->m_lock);
+            __sync_lock_release(&data->m_lock);
             return cur;
         }
         cur = cur->m_HashNodeNext;
@@ -95,16 +95,95 @@ THashNode* insertHashTable(THashTable* table, const char* name, THashNode** node
     }
     if(count > old_count){
         old_count = count;
-        printf("%U, %u\r\n", old_count, hashID);
+        printf("冲突hashid：%u, %u\r\n", old_count, hashID);
     }
     (*node)->m_name = strdup(name);
     (*node)->m_HashNodeNext = data->m_head;
     data->m_head =  (*node) ;
     (*node) = 0;
 
-    sync_lock_release(&data->m_lock);
+    __sync_lock_release(&data->m_lock);
 
     return data->m_head;
 }
 
+THashNode* findHashTable(THashTable* table, const char* name)
+{
+    if (!table || !name) return NULL;
+
+    /* 1. 计算 hash */
+    unsigned int hashID = 5381;
+    const char* str = name;
+    int c;
+    while ((c = *str++)) {
+        hashID = ((hashID << 5) + hashID) + c;
+    }
+
+    /* 2. 拆分目录 / 页内偏移 */
+    unsigned int pageCount  = (hashID >> DirMov) & DirMask;
+    unsigned int pageOffset = hashID & PageMask;
+
+    /* 3. 取得 page */
+    THashPage* page = table->m_PageDir[pageCount];
+    if (!page) return NULL;
+
+    THashData* data = &page->m_data[pageOffset];
+
+    /* 4. bucket 加锁 */
+    //while (!__sync_bool_compare_and_swap(&data->m_lock, 0, 1));
+
+    /* 5. 遍历链表 */
+    THashNode* cur = data->m_head;
+    while (cur) {
+        if (strcmp(cur->m_name, name) == 0) {
+            //data->m_lock = 0;
+            return cur;
+        }
+        cur = cur->m_HashNodeNext;
+    }
+
+    /* 6. 解锁 */
+    //data->m_lock = 0;
+    return NULL;
+}
+
+void destroyHashTable(THashTable* table)
+{
+    if (!table) return;
+
+    /* 遍历 Page Directory */
+    for (unsigned i = 0; i <= DirMask; ++i) {
+        THashPage* page = table->m_PageDir[i];
+        if (!page) continue;
+
+        /* 遍历 page 内所有 bucket */
+        for (unsigned j = 0; j <= PageMask; ++j) {
+            THashData* data = &page->m_data[j];
+
+            /* bucket 加锁（防止并发访问） */
+            while (!__sync_bool_compare_and_swap(&data->m_lock, 0, 1));
+
+            THashNode* cur = data->m_head;
+            while (cur) {
+                THashNode* next = cur->m_HashNodeNext;
+
+                if (cur->m_name)
+                    free(cur->m_name);
+
+                free(cur);
+                cur = next;
+            }
+
+            data->m_head = NULL;
+            data->m_lock = 0;
+        }
+
+        /* 释放 page */
+        free(page);
+        table->m_PageDir[i] = NULL;
+    }
+
+    /* 释放 table（包含 PageDir） */
+    free(table);
+}
 

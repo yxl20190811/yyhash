@@ -28,3 +28,5 @@ typedef struct {
 THashTable* createHashTable();
 
 THashNode* insertHashTable(THashTable* table, const char* name, THashNode** node, void** page) ;
+THashNode* findHashTable(THashTable* table, const char* name);
+void destroyHashTable(THashTable* table);

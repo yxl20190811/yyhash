@@ -6,7 +6,7 @@
 #include <pthread.h>
 
 THashNode* data = NULL;
-const int num_threads = 20;          // 线程数
+const int num_threads = 2;          // 线程数
 const int max = 100000000;  // 总条目数（为了测试先减少）
 const int batch = max/num_threads;
 THashTable* table = NULL;
@@ -69,7 +69,31 @@ int main() {
     double elapsed_time = elapsed_ns / 1e9;
 
     printf("Multi-threaded insert used time: %.2f seconds\n", elapsed_time);
+    char name[1000];
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    for (unsigned i = 0; i < max; i++) {
+        snprintf(name, 20, "%d_%d", i, i);
+        THashNode* node = findHashTable(table, name);
+        if(NULL == node){
+            printf("\r\n%s not find", name);
+        }
+
+    }
+    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    elapsed_ns = (end_time.tv_sec - start_time.tv_sec) * 1000000000L
+                    + (end_time.tv_nsec - start_time.tv_nsec);
+    elapsed_time = elapsed_ns / 1e9;
+
+    printf("find used time: %.2f seconds\n", elapsed_time);
+
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    destroyHashTable(table);
+    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    elapsed_ns = (end_time.tv_sec - start_time.tv_sec) * 1000000000L
+                    + (end_time.tv_nsec - start_time.tv_nsec);
+    elapsed_time = elapsed_ns / 1e9;
     
+    printf("destroy used time: %.2f seconds\n", elapsed_time);
 
     return 0;
 }
