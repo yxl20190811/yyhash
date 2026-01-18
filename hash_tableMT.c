@@ -87,7 +87,7 @@ THashNode* insertHashTable(THashTable* table, const char* name, THashNode** node
     while (NULL != cur) {
         if (0 == strcmp(cur->m_name, name)) {
             // Node already exists, update value and return
-            data->m_lock = 0;
+            sync_lock_release(&data->m_lock);
             return cur;
         }
         cur = cur->m_HashNodeNext;
@@ -99,9 +99,10 @@ THashNode* insertHashTable(THashTable* table, const char* name, THashNode** node
     }
     (*node)->m_name = strdup(name);
     (*node)->m_HashNodeNext = data->m_head;
+    data->m_head =  (*node) ;
     (*node) = 0;
 
-    data->m_lock = 0;
+    sync_lock_release(&data->m_lock);
 
     return data->m_head;
 }
