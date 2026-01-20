@@ -6,7 +6,7 @@
 #include <pthread.h>
 
 THashNode* data = NULL;
-const int num_threads = 2;          // 线程数
+const int num_threads = 16;          // 线程数
 const int max = 100000000;  // 总条目数（为了测试先减少）
 const int batch = max/num_threads;
 THashTable* table = NULL;
@@ -15,11 +15,12 @@ THashTable* table = NULL;
 void* insert_worker(void* arg) {
     unsigned* start1 = (unsigned*)&arg;
     unsigned start = *start1;
+    unsigned end = start + batch;
     //printf("Thread %d-%d: begin inserting\n", start,start+batch);
     void* page = NULL;
     THashNode* node = NULL;
     char name[1000];
-    for (unsigned i = 0; i < batch; i++) {
+    for (unsigned i = start; i < end; i++) {
         snprintf(name, 20, "%d_%d", i, i);
         insertHashTable(table,name, &node, &page);
         //printf("\r\n%d",i);
