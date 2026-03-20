@@ -2,6 +2,7 @@ I compared four hash algorithms. The results show that SwissTable delivers the b
 Although TwoLevelCache achieves the highest efficiency, its memory consumption is significantly higher than that of SwissTable.
 
 
+
            N Algorithm                create(t/m)     insert(t/m)      multi(t/m)         find(t)    destroy(t/m)
 -------------------------------------------------------------------------------------------------------------
         1000 hashTab_2Levelcache      9.21(33200)     0.10(33524)     0.03(33524)       0.03     8.48(772)
