@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
     long mem0, mem1;
 
     mem0 = get_mem_kb();
-    t0 = get_time_ms();
+   
 
     int N = 10;
     if(argc > 1){
@@ -82,14 +82,17 @@ int main(int argc, char* argv[])
         fprintf(stderr, "malloc names failed\n");
         return 1;
     }
+    t0 = get_time_ms();
     for (i = 0; i < N; i++)
         sprintf(names[i], "node_%d", i);
-
+    t1 = get_time_ms();
+    mem1 = get_mem_kb();
+    printf("[init node name ] time: %8.2f ms  mem: +%ld KB\n", t1 - t0, mem1 - mem0);
     /* --- create --- */
     
 
+    t0 = get_time_ms();
     tbl = createHashTbl(N);
-
     t1 = get_time_ms();
     mem1 = get_mem_kb();
     printf("[create ] time: %8.2f ms  mem: +%ld KB\n", t1 - t0, mem1 - mem0);
@@ -103,8 +106,10 @@ int main(int argc, char* argv[])
     //mem0 = get_mem_kb();
     t0 = get_time_ms();
 
+    char buf[100];
     for (i = 0; i < N; i++) {
-        id = insertHashTbl(tbl, names[i]);
+        sprintf(buf, "node_%d", i);
+        id = insertHashTbl(tbl, buf);
         if (id != i+1) {
             fprintf(stderr, "insertHashTbl id mismatch: i=%d got id=%d\n", i, id);
             break;
@@ -119,7 +124,8 @@ int main(int argc, char* argv[])
     //重复插入测试
     t0 = get_time_ms();
     for (i = 0; i < N; i++) {
-        id = insertHashTbl(tbl, names[i]);
+        sprintf(buf, "node_%d", i);
+        id = insertHashTbl(tbl, buf);
         if (id != i+1) {
             fprintf(stderr, "insertHashTbl id mismatch: i=%d got id=%d\n", i, id);
         }
@@ -134,7 +140,8 @@ int main(int argc, char* argv[])
     t0 = get_time_ms();
 
     for (i = 0; i < N; i++) {
-        id = findHashTbl(tbl, names[i]);
+        sprintf(buf, "node_%d", i);
+        id = findHashTbl(tbl, buf);
         if (id != i+1) {
             if (err_cnt < 10)
                 fprintf(stderr, "  findHashTbl NOT FOUND: %s\n", names[i]);

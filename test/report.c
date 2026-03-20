@@ -7,12 +7,14 @@
 
 typedef struct
 {
+    double init_t;
     double create_t;
     double insert_t;
     double mult_t;
     double find_t;
     double destroy_t;
 
+    long init_m;
     long create_m;
     long insert_m;
     long mult_m;
@@ -95,6 +97,14 @@ int report(const char* FileName)
         double t;
         long m;
 
+        // 新增 init node name
+        if(sscanf(line,"[init node name ] time: %lf ms  mem: +%ld",&t,&m)==2)
+        {
+            algos[cur_algo].result[cur_n].init_t=t;
+            algos[cur_algo].result[cur_n].init_m=m;
+            continue;
+        }
+
         if(sscanf(line,"[create ] time: %lf ms  mem: +%ld",&t,&m)==2)
         {
             algos[cur_algo].result[cur_n].create_t=t;
@@ -133,15 +143,16 @@ int report(const char* FileName)
     fclose(fp);
 
     printf("\n");
-    printf("%12s %-20s %15s %15s %15s %15s %15s\n",
+    printf("%12s %-20s %15s %15s %15s %15s %15s %15s\n",
            "N","Algorithm",
+           "init(t/m)",
            "create(t/m)",
            "insert(t/m)",
            "multi(t/m)",
            "find(t)",
            "destroy(t/m)");
 
-    printf("-------------------------------------------------------------------------------------------------------------\n");
+    printf("-----------------------------------------------------------------------------------------------------------------------------\n");
 
     for(int n=0;n<n_count;n++)
     {
@@ -153,6 +164,7 @@ int report(const char* FileName)
                    nvalues[n].value,
                    algos[a].name);
 
+            print_tm(r->init_t,r->init_m); printf(" ");
             print_tm(r->create_t,r->create_m); printf(" ");
             print_tm(r->insert_t,r->insert_m); printf(" ");
             print_tm(r->mult_t,r->mult_m); printf(" ");

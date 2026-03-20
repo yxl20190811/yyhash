@@ -10,9 +10,9 @@ void test2(const char* dir, unsigned N){
 }
 void test1(unsigned N){
     test2("hashTab_2Levelcache", N);
-    //test2("hashTab_map", N);
-    //test2("hashTab_swissTab", N);
-    //test2("hashTab_utHash", N);
+    test2("hashTab_map", N);
+    test2("hashTab_swissTab", N);
+    test2("hashTab_utHash", N);
 }
 int report(const char* FileName);
 void main(){
