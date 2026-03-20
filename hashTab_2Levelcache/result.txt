@@ -1,0 +1,11 @@
+=== Hash Table Test : N = 100000000 ===
+
+[create ] time:  7490.09 ms  mem: +1953356 KB
+[insert ] time:  7246.81 ms  mem: +11091252 KB  total: 100000000
+[mult insert ] time:  2034.19 ms  mem: +11091252 KB  total: 100000000
+[find   ] time:  2045.69 ms  errors = 0, total = 100000000
+[destroy] time:  2783.81 ms  mem: +8389264 KB
+
+done.
+[1] + Done                       "/usr/bin/gdb" --interpreter=mi --tty=${DbgTerm} 0<"/tmp/Microsoft-MIEngine-In-ukefcd3s.2a1" 1>"/tmp/Microsoft-MIEngine-Out-vvm2detn.wbh"
+➜  hashTab_2Levelcache 

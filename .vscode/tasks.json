@@ -1,0 +1,13 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "cd  hashTab_2Levelcache && gcc -g -o ./bin/main.exe  ../public/*c  ./src/*.c && cd ..  && cd  hashTab_map && g++ -g -o ./bin/main.exe  ../public/*c  ./src/*.cpp && cd ..  && cd  hashTab_swissTab && g++ -g -o ./bin/main.exe  ../public/*c  ./src/*.c && cd ..  && cd hashTab_utHash && g++ -g -o ./bin/main.exe  ../public/*c  ./src/*.c && cd .. && cd test && gcc -g -o ./main.exe ./*.c"
+            //"command": "cd  hashTab_2Levelcache && gcc -g -o ./bin/main.exe  ../public/*c  ./src/*.c "
+        }
+    ]
+}
+
+//g++ -std=c++11 -O2 test_stdmap1.cpp -lbenchmark -lpthread -o bench_stdmap1

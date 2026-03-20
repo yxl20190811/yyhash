@@ -1,0 +1,6 @@
+=== Hash Table Test : N = 100000000 ===
+
+[create ] time:  7554.00 ms  mem: +2084388 KB
+[insert ] time: 10538.32 ms  mem: +7306572 KB  total: 100000000
+[find   ] time:  7491.67 ms  errors = 0, total = 100000000
+[destroy] time:  2813.07 ms  mem: 3125424 KB
